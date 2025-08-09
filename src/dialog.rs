@@ -86,8 +86,15 @@ impl DialogState {
     Ok(())
   }
 
-  pub fn interact(&mut self, pos: (u16, u16)) {
-    ()
+  pub fn interact(&mut self, pos: (u16, u16), canvas: &mut Canvas) {
+    if pos.1 == self.toolbar_pos.1 + 1 {
+      match pos.0 - self.toolbar_pos.0 {
+        (2..=3) => canvas.set_tool(PaintTool::Paintbrush),
+        (6..=7) => canvas.set_tool(PaintTool::Bucket),
+        (10..=11) => todo!("palette"),
+        _ => (),
+      }
+    }
   }
 }
 

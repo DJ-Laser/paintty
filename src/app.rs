@@ -94,7 +94,9 @@ impl App {
       .iter()
       .any(|bound| bound.contains((event.column, event.row)))
     {
-      self.dialogs.interact((event.column, event.row));
+      self
+        .dialogs
+        .interact((event.column, event.row), &mut self.canvas);
     } else {
       self
         .canvas

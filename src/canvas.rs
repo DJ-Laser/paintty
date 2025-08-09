@@ -33,6 +33,10 @@ impl Canvas {
     &self.current_tool
   }
 
+  pub fn set_tool(&mut self, tool: PaintTool) {
+    self.current_tool = tool;
+  }
+
   fn paint_pixel(&mut self, x: usize, y: usize) {
     let Some(pixel) = self.pixels.get_mut(y).and_then(|row| row.get_mut(x)) else {
       return;

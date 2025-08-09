@@ -41,6 +41,14 @@ impl Canvas {
     self.current_tool = tool;
   }
 
+  pub fn current_color(&self) -> &Pixel {
+    &self.current_color
+  }
+
+  pub fn set_color(&mut self, color: Pixel) {
+    self.current_color = color;
+  }
+
   fn paint_pixel(&mut self, x: usize, y: usize) {
     let Some(pixel) = Self::get_pixel_mut(&mut self.pixels, x, y) else {
       return;

@@ -49,21 +49,26 @@ impl Canvas {
     *pixel = self.current_color;
   }
 
-  fn flood_fill_pixel(&mut self, x: usize, y: usize) {
-    if Some(self.current_color) == Self::get_pixel_mut(&mut self.pixels, x, y).copied() {
-      return;
-    }
+  fn flood_fill_pixel(&mut self, origin_x: usize, origin_y: usize) {
+    let mut unseen_pixels = vec![(origin_x, origin_y)];
 
-    self.paint_pixel(x, y);
-    let neighbors = vec![(0, 1), (1, 0), (0, -1), (-1, 0)]
-      .into_iter()
-      .flat_map(|pos| {
-        x.checked_add_signed(pos.0)
-          .and_then(|x| y.checked_add_signed(pos.1).map(|y| (x, y)))
-      });
+    while let Some((x, y)) = unseen_pixels.pop() {
+      match Self::get_pixel_mut(&mut self.pixels, x, y).copied() {
+        Some(color) if color == self.current_color => continue,
+        None => continue,
+        _ => (),
+      }
 
-    for (neighbor_x, neighbor_y) in neighbors {
-      self.flood_fill_pixel(neighbor_x, neighbor_y);
+      self.paint_pixel(x, y);
+
+      let neighbors = vec![(0, 1), (1, 0), (0, -1), (-1, 0)]
+        .into_iter()
+        .flat_map(|pos| {
+          x.checked_add_signed(pos.0)
+            .and_then(|x| y.checked_add_signed(pos.1).map(|y| (x, y)))
+        });
+
+      unseen_pixels.extend(neighbors);
     }
   }
 

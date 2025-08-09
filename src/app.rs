@@ -1,9 +1,12 @@
-use std::io::{self, Stdout, Write};
+use std::io::{self, Stdout};
 
 use crossterm::{
   cursor,
-  event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
-  queue,
+  event::{
+    self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent,
+    MouseEventKind,
+  },
+  execute, queue,
   style::{self, Color, Stylize},
   terminal::{self, WindowSize, window_size},
 };
@@ -16,8 +19,10 @@ pub struct App {
 
 impl App {
   pub fn new() -> io::Result<Self> {
+    let mut stdout = io::stdout();
     terminal::enable_raw_mode()?;
     let WindowSize { rows, columns, .. } = window_size()?;
+    execute!(stdout, event::EnableMouseCapture)?;
 
     let mut image = Vec::with_capacity(rows as usize);
     for _ in 0..rows {
@@ -27,14 +32,18 @@ impl App {
     }
 
     Ok(Self {
-      stdout: io::stdout(),
+      stdout,
       image,
       should_quit: false,
     })
   }
 
   fn redraw_screen(&mut self) -> io::Result<()> {
-    queue!(self.stdout, terminal::Clear(terminal::ClearType::All))?;
+    queue!(
+      self.stdout,
+      terminal::BeginSynchronizedUpdate,
+      terminal::Clear(terminal::ClearType::All)
+    )?;
 
     for (y, row) in self.image.iter().enumerate() {
       queue!(self.stdout, cursor::MoveTo(0, y as u16))?;
@@ -42,7 +51,8 @@ impl App {
         queue!(self.stdout, style::PrintStyledContent(" ".on(*pixel)))?;
       }
     }
-    self.stdout.flush()?;
+
+    execute!(self.stdout, terminal::EndSynchronizedUpdate)?;
 
     Ok(())
   }
@@ -64,9 +74,23 @@ impl App {
     Ok(())
   }
 
+  pub fn handle_mouse_event(&mut self, event: MouseEvent) -> io::Result<()> {
+    if !matches!(
+      event.kind,
+      MouseEventKind::Down(MouseButton::Left) | MouseEventKind::Drag(MouseButton::Left)
+    ) {
+      return Ok(());
+    }
+
+    self.image[event.row as usize][event.column as usize] = Color::Black;
+
+    Ok(())
+  }
+
   pub fn handle_event(&mut self, event: Event) -> io::Result<()> {
     match event {
       Event::Key(event) => self.handle_key_event(event)?,
+      Event::Mouse(event) => self.handle_mouse_event(event)?,
       _ => (),
     }
 
@@ -92,6 +116,7 @@ impl App {
 
 impl Drop for App {
   fn drop(&mut self) {
+    let _ = execute!(self.stdout, event::DisableMouseCapture);
     let _ = terminal::disable_raw_mode();
   }
 }

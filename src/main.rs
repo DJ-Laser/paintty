@@ -4,6 +4,7 @@ use app::App;
 
 mod app;
 mod canvas;
+mod dialog;
 
 fn main() -> io::Result<()> {
   let mut app = App::new()?;

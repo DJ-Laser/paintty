@@ -11,11 +11,12 @@ use crossterm::{
   terminal::{self, window_size},
 };
 
-use crate::canvas::Canvas;
+use crate::{canvas::Canvas, dialog::DialogState};
 
 pub struct App {
   stdout: Stdout,
   canvas: Canvas,
+  dialogs: DialogState,
   should_quit: bool,
 }
 
@@ -34,6 +35,7 @@ impl App {
     Ok(Self {
       stdout,
       canvas,
+      dialogs: DialogState::new(&terminal_size),
       should_quit: false,
     })
   }
@@ -54,6 +56,8 @@ impl App {
       }
     }
 
+    self.dialogs.render(&mut self.stdout)?;
+
     execute!(self.stdout, terminal::EndSynchronizedUpdate)?;
 
     Ok(())
@@ -70,7 +74,7 @@ impl App {
         self.should_quit = true
       }
 
-      _ => (),
+      _ => self.dialogs.hidden = !self.dialogs.hidden,
     }
 
     Ok(())
@@ -84,9 +88,18 @@ impl App {
       return Ok(());
     }
 
-    self
-      .canvas
-      .interact_with_pixel((event.column / 2) as usize, event.row as usize);
+    if self
+      .dialogs
+      .bounds()
+      .iter()
+      .any(|bound| bound.contains((event.column, event.row)))
+    {
+      self.dialogs.interact((event.column, event.row));
+    } else {
+      self
+        .canvas
+        .interact_with_pixel((event.column / 2) as usize, event.row as usize);
+    }
 
     Ok(())
   }
@@ -120,6 +133,10 @@ impl App {
 
 impl Drop for App {
   fn drop(&mut self) {
+    if let Ok((_, rows)) = terminal::size() {
+      let _ = execute!(self.stdout, cursor::MoveTo(0, rows));
+    }
+
     let _ = execute!(self.stdout, event::DisableMouseCapture, cursor::Show);
     let _ = terminal::disable_raw_mode();
   }

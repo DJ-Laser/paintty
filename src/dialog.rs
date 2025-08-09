@@ -2,9 +2,11 @@ use std::io::{self, Stdout};
 
 use crossterm::{
   cursor, queue,
-  style::{self, Stylize},
+  style::{self, Color, Stylize},
   terminal::WindowSize,
 };
+
+use crate::canvas::{Canvas, PaintTool};
 
 pub struct Bound {
   top: u16,
@@ -51,7 +53,7 @@ impl DialogState {
     &self.bounds
   }
 
-  pub fn render(&mut self, stdout: &mut Stdout) -> io::Result<()> {
+  pub fn render(&mut self, stdout: &mut Stdout, canvas: &Canvas) -> io::Result<()> {
     self.bounds.clear();
 
     if self.hidden {
@@ -63,15 +65,22 @@ impl DialogState {
       .bounds
       .push(Bound::from_pos_size(self.toolbar_pos, toolbar_size));
     draw_dialog(stdout, self.toolbar_pos, toolbar_size)?;
+    let mut brush_color = Color::Reset;
+    let mut bucket_color = Color::Reset;
+    match canvas.current_tool() {
+      PaintTool::Paintbrush => brush_color = Color::White,
+      PaintTool::Bucket => bucket_color = Color::White,
+    }
+
     queue!(
       stdout,
       cursor::MoveTo(self.toolbar_pos.0 + 1, self.toolbar_pos.1 + 1),
       style::Print(" "),
-      style::Print("🖌️ ".on_magenta()),
+      style::Print("🖌️ ".on(brush_color)),
       style::Print("  "),
-      style::Print("🪣".on_green()),
+      style::Print("🪣".on(bucket_color)),
       style::Print("  "),
-      style::Print("🎨".on_blue())
+      style::Print("🎨")
     )?;
 
     Ok(())

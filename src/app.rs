@@ -56,7 +56,7 @@ impl App {
       }
     }
 
-    self.dialogs.render(&mut self.stdout)?;
+    self.dialogs.render(&mut self.stdout, &self.canvas)?;
 
     execute!(self.stdout, terminal::EndSynchronizedUpdate)?;
 

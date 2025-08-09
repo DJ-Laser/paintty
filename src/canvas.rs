@@ -1,6 +1,12 @@
+pub enum PaintTool {
+  Paintbrush,
+  Bucket,
+}
+
 pub struct Canvas {
   pixels: Vec<Vec<Pixel>>,
   current_color: Pixel,
+  current_tool: PaintTool,
 }
 
 impl Canvas {
@@ -15,6 +21,7 @@ impl Canvas {
     Self {
       pixels,
       current_color: Pixel::BLACK,
+      current_tool: PaintTool::Paintbrush,
     }
   }
 
@@ -22,12 +29,23 @@ impl Canvas {
     &self.pixels
   }
 
-  pub fn interact_with_pixel(&mut self, x: usize, y: usize) {
+  pub fn current_tool(&self) -> &PaintTool {
+    &self.current_tool
+  }
+
+  fn paint_pixel(&mut self, x: usize, y: usize) {
     let Some(pixel) = self.pixels.get_mut(y).and_then(|row| row.get_mut(x)) else {
       return;
     };
 
     *pixel = self.current_color;
+  }
+
+  pub fn interact_with_pixel(&mut self, x: usize, y: usize) {
+    match self.current_tool {
+      PaintTool::Paintbrush => self.paint_pixel(x, y),
+      PaintTool::Bucket => todo!(),
+    }
   }
 }
 

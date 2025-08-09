@@ -8,7 +8,7 @@ use crossterm::{
   },
   execute, queue,
   style::{self, Stylize},
-  terminal::{self, WindowSize, window_size},
+  terminal::{self, window_size},
 };
 
 use crate::canvas::Canvas;
@@ -25,8 +25,11 @@ impl App {
     terminal::enable_raw_mode()?;
     execute!(stdout, event::EnableMouseCapture, cursor::Hide)?;
 
-    let WindowSize { rows, columns, .. } = window_size()?;
-    let canvas = Canvas::new(columns as usize, rows as usize);
+    let terminal_size = window_size()?;
+    let canvas = Canvas::new(
+      (terminal_size.columns / 2) as usize,
+      terminal_size.rows as usize,
+    );
 
     Ok(Self {
       stdout,
@@ -45,10 +48,9 @@ impl App {
     for (y, row) in self.canvas.pixels().iter().enumerate() {
       queue!(self.stdout, cursor::MoveTo(0, y as u16))?;
       for pixel in row {
-        queue!(
-          self.stdout,
-          style::PrintStyledContent(" ".on((*pixel).into()))
-        )?;
+        let color = (*pixel).into();
+
+        queue!(self.stdout, style::PrintStyledContent("  ".on(color)))?;
       }
     }
 
@@ -84,7 +86,7 @@ impl App {
 
     self
       .canvas
-      .interact_with_pixel(event.column as usize, event.row as usize);
+      .interact_with_pixel((event.column / 2) as usize, event.row as usize);
 
     Ok(())
   }

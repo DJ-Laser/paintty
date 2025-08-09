@@ -58,13 +58,17 @@ impl Canvas {
   }
 
   fn flood_fill_pixel(&mut self, origin_x: usize, origin_y: usize) {
+    let Some(replace_color) = Self::get_pixel_mut(&mut self.pixels, origin_x, origin_y).copied()
+    else {
+      return;
+    };
+
     let mut unseen_pixels = vec![(origin_x, origin_y)];
 
     while let Some((x, y)) = unseen_pixels.pop() {
       match Self::get_pixel_mut(&mut self.pixels, x, y).copied() {
-        Some(color) if color == self.current_color => continue,
-        None => continue,
-        _ => (),
+        Some(color) if color == replace_color => (),
+        _ => continue,
       }
 
       self.paint_pixel(x, y);

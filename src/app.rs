@@ -7,13 +7,15 @@ use crossterm::{
     MouseEventKind,
   },
   execute, queue,
-  style::{self, Color, Stylize},
+  style::{self, Stylize},
   terminal::{self, WindowSize, window_size},
 };
 
+use crate::canvas::Canvas;
+
 pub struct App {
   stdout: Stdout,
-  image: Vec<Vec<Color>>,
+  canvas: Canvas,
   should_quit: bool,
 }
 
@@ -21,19 +23,14 @@ impl App {
   pub fn new() -> io::Result<Self> {
     let mut stdout = io::stdout();
     terminal::enable_raw_mode()?;
-    let WindowSize { rows, columns, .. } = window_size()?;
-    execute!(stdout, event::EnableMouseCapture)?;
+    execute!(stdout, event::EnableMouseCapture, cursor::Hide)?;
 
-    let mut image = Vec::with_capacity(rows as usize);
-    for _ in 0..rows {
-      let mut row = Vec::with_capacity(columns as usize);
-      row.resize(columns as usize, Color::White);
-      image.push(row);
-    }
+    let WindowSize { rows, columns, .. } = window_size()?;
+    let canvas = Canvas::new(columns as usize, rows as usize);
 
     Ok(Self {
       stdout,
-      image,
+      canvas,
       should_quit: false,
     })
   }
@@ -45,10 +42,13 @@ impl App {
       terminal::Clear(terminal::ClearType::All)
     )?;
 
-    for (y, row) in self.image.iter().enumerate() {
+    for (y, row) in self.canvas.pixels().iter().enumerate() {
       queue!(self.stdout, cursor::MoveTo(0, y as u16))?;
       for pixel in row {
-        queue!(self.stdout, style::PrintStyledContent(" ".on(*pixel)))?;
+        queue!(
+          self.stdout,
+          style::PrintStyledContent(" ".on((*pixel).into()))
+        )?;
       }
     }
 
@@ -82,7 +82,9 @@ impl App {
       return Ok(());
     }
 
-    self.image[event.row as usize][event.column as usize] = Color::Black;
+    self
+      .canvas
+      .interact_with_pixel(event.column as usize, event.row as usize);
 
     Ok(())
   }
@@ -116,7 +118,7 @@ impl App {
 
 impl Drop for App {
   fn drop(&mut self) {
-    let _ = execute!(self.stdout, event::DisableMouseCapture);
+    let _ = execute!(self.stdout, event::DisableMouseCapture, cursor::Show);
     let _ = terminal::disable_raw_mode();
   }
 }

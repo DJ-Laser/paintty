@@ -29,6 +29,10 @@ impl Canvas {
     &self.pixels
   }
 
+  fn get_pixel_mut(pixels: &mut Vec<Vec<Pixel>>, x: usize, y: usize) -> Option<&mut Pixel> {
+    pixels.get_mut(y).and_then(|row| row.get_mut(x))
+  }
+
   pub fn current_tool(&self) -> &PaintTool {
     &self.current_tool
   }
@@ -38,17 +42,35 @@ impl Canvas {
   }
 
   fn paint_pixel(&mut self, x: usize, y: usize) {
-    let Some(pixel) = self.pixels.get_mut(y).and_then(|row| row.get_mut(x)) else {
+    let Some(pixel) = Self::get_pixel_mut(&mut self.pixels, x, y) else {
       return;
     };
 
     *pixel = self.current_color;
   }
 
+  fn flood_fill_pixel(&mut self, x: usize, y: usize) {
+    if Some(self.current_color) == Self::get_pixel_mut(&mut self.pixels, x, y).copied() {
+      return;
+    }
+
+    self.paint_pixel(x, y);
+    let neighbors = vec![(0, 1), (1, 0), (0, -1), (-1, 0)]
+      .into_iter()
+      .flat_map(|pos| {
+        x.checked_add_signed(pos.0)
+          .and_then(|x| y.checked_add_signed(pos.1).map(|y| (x, y)))
+      });
+
+    for (neighbor_x, neighbor_y) in neighbors {
+      self.flood_fill_pixel(neighbor_x, neighbor_y);
+    }
+  }
+
   pub fn interact_with_pixel(&mut self, x: usize, y: usize) {
     match self.current_tool {
       PaintTool::Paintbrush => self.paint_pixel(x, y),
-      PaintTool::Bucket => todo!(),
+      PaintTool::Bucket => self.flood_fill_pixel(x, y),
     }
   }
 }

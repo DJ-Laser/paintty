@@ -11,6 +11,11 @@ Press ctrl-c or q to quit
 Press any other key to show/hide the color and tool menu
 Any other key will hide/show the tools and palette
 
+### Installation
+
+paintty is published on [crates.io](https://crates.io/crates/paintty)!
+you can install it with `cargo install paintty`
+
 ### Building
 
 Install any modern version of rust and run `cargo run`
